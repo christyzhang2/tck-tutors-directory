@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Mentor {
+  id        String   @id @default(cuid())
+  name      String
+  headline  String?
+  bio       String?
+  city      String?
+  country   String?
+  timezone  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mentorTags MentorTag[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  type      TagType
+  label     String
+  createdAt DateTime @default(now())
+
+  mentorTags MentorTag[]
+
+  @@unique([type, label])
+}
+
+model MentorTag {
+  mentorId String
+  tagId    String
+
+  mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([mentorId, tagId])
+}
+
+enum TagType {
+  SUBJECT
+  LANGUAGE
+  CURRICULUM
+  HERITAGE
+  TCK_MARKER
+  INTEREST
+}
