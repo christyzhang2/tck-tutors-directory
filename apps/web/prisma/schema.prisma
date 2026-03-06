@@ -49,3 +49,49 @@ enum TagType {
   TCK_MARKER
   INTEREST
 }
+
+enum StageStatus {
+  NEW
+  REVIEWING
+  APPROVED
+  REJECTED
+}
+
+model RawSource {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  domain    String
+  title     String?
+  crawledAt DateTime @default(now())
+
+  stagedMentors StagedMentor[]
+}
+
+model StagedMentor {
+  id          String      @id @default(cuid())
+  status      StageStatus @default(NEW)
+
+  // extracted fields (editable during review)
+  name        String?
+  headline    String?
+  bio         String?
+  city        String?
+  country     String?
+  timezone    String?
+
+  // raw extraction payload for debugging + re-processing
+  rawJson     Json
+
+  // provenance
+  sourceId    String
+  source      RawSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  // optional dedupe hints
+  fingerprint String? @unique
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([sourceId])
+}
