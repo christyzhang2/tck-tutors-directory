@@ -25,6 +25,7 @@ BAD_NAME_VERBS = re.compile(
 )
 SENTENCE_PUNCT_RE = re.compile(r"[.!?]")
 BRAND_RE = re.compile(r"\bAmazingTalker\b", re.IGNORECASE)
+UUIDISH_SEGMENT_RE = re.compile(r"^[a-f0-9-]{8,}$", re.IGNORECASE)
 
 def domain_of(url: str) -> str:
     return urlparse(url).netloc
@@ -35,6 +36,13 @@ def canonical_url(url: str) -> str:
 
 
 def parse_json_ld_name(soup: BeautifulSoup) -> str | None:
+    for obj in iter_json_ld_objects(soup):
+        if isinstance(obj, dict) and obj.get("name"):
+            return str(obj["name"]).strip() or None
+    return None
+
+
+def iter_json_ld_objects(soup: BeautifulSoup):
     for s in soup.find_all("script", attrs={"type": "application/ld+json"}):
         try:
             raw = s.get_text(strip=True)
@@ -46,8 +54,37 @@ def parse_json_ld_name(soup: BeautifulSoup) -> str | None:
 
         candidates = data if isinstance(data, list) else [data]
         for obj in candidates:
-            if isinstance(obj, dict) and obj.get("name"):
-                return str(obj["name"]).strip() or None
+            if isinstance(obj, dict):
+                yield obj
+
+
+def pick_json_ld_offer_price(soup: BeautifulSoup) -> str | None:
+    for obj in iter_json_ld_objects(soup):
+        offers = obj.get("offers")
+        if not isinstance(offers, dict):
+            continue
+
+        currency = str(offers.get("priceCurrency") or "USD").upper()
+        low = offers.get("lowPrice")
+        high = offers.get("highPrice")
+        symbol = "US$" if currency == "USD" else f"{currency} "
+
+        if low is None and high is None:
+            continue
+        if low is not None and high is not None and str(low) != str(high):
+            return f"{symbol}{low}-{high}"
+        value = high if low is None else low
+        return f"{symbol}{value}"
+    return None
+
+
+def pick_json_ld_description(soup: BeautifulSoup) -> str | None:
+    for obj in iter_json_ld_objects(soup):
+        description = obj.get("description")
+        if isinstance(description, str):
+            description = " ".join(description.split()).strip()
+            if description:
+                return description
     return None
 
 
@@ -83,6 +120,147 @@ def normalize_candidate_name(text: str | None) -> str | None:
             return part
 
     return None
+
+
+def name_from_url_slug(url: str) -> str | None:
+    slug = canonical_url(url).rstrip("/").split("/")[-1].strip().lower()
+    if not slug or UUIDISH_SEGMENT_RE.fullmatch(slug):
+        return None
+
+    tokens = [token for token in slug.split("-") if token and token.isalpha()]
+    if not 2 <= len(tokens) <= 5:
+        return None
+    if any(len(token) == 1 for token in tokens):
+        return None
+
+    return " ".join(token.capitalize() for token in tokens)
+
+
+def extract_amazingtalker_name(text: str | None) -> str | None:
+    if not text:
+        return None
+
+    cleaned = re.sub(r"[^A-Za-z' -]+", " ", text)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if not cleaned:
+        return None
+
+    stopwords = {"the", "and", "for", "of", "with", "to", "in", "on"}
+    tokens = cleaned.split()
+    candidate_tokens = []
+
+    for token in tokens:
+        lower = token.lower()
+        if lower in stopwords:
+            break
+        if BAD_NAME_VERBS.search(token):
+            break
+        if len(token) > 1 and token.isupper():
+            break
+        if not re.fullmatch(r"[A-Za-z][A-Za-z'-]*", token):
+            break
+        candidate_tokens.append(token)
+        if len(candidate_tokens) == 4:
+            break
+
+    if not candidate_tokens:
+        return None
+
+    candidate = " ".join(candidate_tokens)
+    if len(candidate_tokens) >= 2:
+        return candidate
+    if len(candidate) >= 4:
+        return candidate
+    return None
+
+
+def unique_preserve_order(values: List[str]) -> List[str]:
+    seen = set()
+    out: List[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        out.append(value)
+    return out
+
+
+def extract_amazingtalker_languages(soup: BeautifulSoup) -> List[str]:
+    title = soup.find("span", string=re.compile(r"^\s*Speaks\s*$", re.IGNORECASE))
+    if not title:
+        return []
+
+    container = title.find_parent("div")
+    if not container:
+        return []
+
+    languages: List[str] = []
+    for block in container.find_all("div", recursive=False):
+        spans = block.find_all("span", recursive=False)
+        if not spans:
+            continue
+        label = spans[0].get_text(" ", strip=True)
+        if label and label.lower() != "speaks":
+            languages.append(label)
+
+    return unique_preserve_order(languages)
+
+
+def extract_amazingtalker_subjects(raw_text: str) -> List[str]:
+    subjects = []
+    for match in re.findall(r"【([^】]+)】", raw_text):
+        cleaned = " ".join(match.split()).strip(" -|•")
+        if not cleaned:
+            continue
+        if len(cleaned) > 50:
+            continue
+        subjects.append(cleaned)
+    return unique_preserve_order(subjects)
+
+
+def extract_amazingtalker_profile(soup: BeautifulSoup, raw_text: str, url: str):
+    name = None
+    name_source = None
+    name_confidence = "low"
+
+    hero_name = soup.select_one(".teacher-info .name span")
+    if hero_name:
+        name_source = "amazingtalker_dom"
+        name = extract_amazingtalker_name(hero_name.get_text(" ", strip=True))
+        name_confidence = "high" if name else "low"
+
+    if not name:
+        slug_name = name_from_url_slug(url)
+        if slug_name:
+            name_source = "amazingtalker_slug"
+            name = slug_name
+            name_confidence = "medium"
+
+    headline = None
+    hero_headline = soup.select_one(".teacher-info .headline")
+    if hero_headline:
+        headline = hero_headline.get_text(" ", strip=True) or None
+
+    intro = soup.select_one("#introduction .text-intro .at-text")
+    bio = intro.get_text(" ", strip=True) if intro else None
+    if not bio:
+        bio = pick_json_ld_description(soup)
+
+    price = pick_json_ld_offer_price(soup)
+    subjects = extract_amazingtalker_subjects(raw_text)
+    languages = extract_amazingtalker_languages(soup)
+
+    return {
+        "name": name,
+        "name_source": name_source,
+        "name_confidence": name_confidence,
+        "headline": headline,
+        "bio": bio,
+        "price": price,
+        "subjects": subjects,
+        "languages": languages,
+        "extractor": "amazingtalker_v1",
+    }
 
 async def polite_delay(min_s: float, max_s: float):
     await asyncio.sleep(random.uniform(min_s, max_s))
@@ -126,12 +304,20 @@ def extract_profile_generic(html: str, url: str):
     name_confidence = "low"
     name = None
 
-    json_ld_name = parse_json_ld_name(soup)
-    if json_ld_name:
-        name_source = "json_ld"
-        name = normalize_candidate_name(json_ld_name)
-        name_confidence = "high" if name else "low"
-    elif not name:
+    profile_data = None
+    if "amazingtalker.com" in domain_of(url):
+        profile_data = extract_amazingtalker_profile(soup, raw_text, url)
+        name = profile_data["name"]
+        name_source = profile_data["name_source"]
+        name_confidence = profile_data["name_confidence"]
+
+    if not name and not profile_data:
+        json_ld_name = parse_json_ld_name(soup)
+        if json_ld_name:
+            name_source = "json_ld"
+            name = normalize_candidate_name(json_ld_name)
+            name_confidence = "high" if name else "low"
+    if not name and not profile_data:
         og = soup.find("meta", property="og:title")
         if og and og.get("content"):
             name_source = "og_title"
@@ -150,24 +336,33 @@ def extract_profile_generic(html: str, url: str):
 
     # --- HEADLINE ---
     headline = None
-    meta_desc = soup.find("meta", attrs={"name": "description"})
-    if meta_desc and meta_desc.get("content"):
-        headline = meta_desc["content"].strip()
+    if profile_data:
+        headline = profile_data["headline"]
+    else:
+        meta_desc = soup.find("meta", attrs={"name": "description"})
+        if meta_desc and meta_desc.get("content"):
+            headline = meta_desc["content"].strip()
 
-    h2 = soup.find("h2")
-    if h2:
-        headline = h2.get_text(" ", strip=True)
+        h2 = soup.find("h2")
+        if h2:
+            headline = h2.get_text(" ", strip=True)
 
     # --- BIO ---
-    paras = [p.get_text(" ", strip=True) for p in soup.find_all("p")]
-    paras = [p for p in paras if len(p) >= 40]
-    bio = " ".join(paras[:4]) if paras else None
+    if profile_data:
+        bio = profile_data["bio"]
+    else:
+        paras = [p.get_text(" ", strip=True) for p in soup.find_all("p")]
+        paras = [p for p in paras if len(p) >= 40]
+        bio = " ".join(paras[:4]) if paras else None
 
     # heuristic price/location (keep)
-    price = None
-    m = re.search(r'(\bUS\$|\bUSD|\$)\s?\d+(\.\d+)?', raw_text)
-    if m:
-        price = m.group(0)
+    if profile_data:
+        price = profile_data["price"]
+    else:
+        price = None
+        m = re.search(r'(\bUS\$|\bUSD|\$)\s?\d+(\.\d+)?', raw_text)
+        if m:
+            price = m.group(0)
 
     location = None
     loc = re.search(r'\b(Seoul|Korea|South Korea|Japan|Tokyo|Hong Kong|Singapore|Taiwan|Taipei)\b', raw_text, re.IGNORECASE)
@@ -180,13 +375,13 @@ def extract_profile_generic(html: str, url: str):
         "name": name,
         "headline": headline,
         "bio": bio,
-        "subjects": [],
-        "languages": [],
+        "subjects": profile_data["subjects"] if profile_data else [],
+        "languages": profile_data["languages"] if profile_data else [],
         "price": price,
         "location": location,
         "raw_text": raw_text,
         "metadata": {
-            "extractor": "generic_v6",
+            "extractor": profile_data["extractor"] if profile_data else "generic_v6",
             "raw_text_len": len(raw_text),
             "name_confidence": name_confidence,
             "name_source": name_source,
