@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "key": "amazingtalker_general",
+      "start_urls": ["https://en.amazingtalker.com/tutors"],
+      "profile_url_regex": "/teachers-and-tutors/",
+      "max_profiles": 50,
+      "delay_min_sec": 3,
+      "delay_max_sec": 5
+    }
+  ]
+}
