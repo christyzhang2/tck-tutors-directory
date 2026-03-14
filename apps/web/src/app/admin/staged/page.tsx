@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+
+type StagedMentorWithSource = Prisma.StagedMentorGetPayload<{
+  include: { source: true };
+}>;
 
 export default async function StagedMentorsAdminPage() {
   const items = await prisma.stagedMentor.findMany({
@@ -23,7 +28,7 @@ export default async function StagedMentorsAdminPage() {
       </div>
 
       <div className="space-y-3">
-        {items.map((m) => (
+        {items.map((m: StagedMentorWithSource) => (
           <div key={m.id} className="rounded-xl border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="font-medium">
