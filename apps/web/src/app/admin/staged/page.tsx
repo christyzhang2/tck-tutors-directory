@@ -1,10 +1,5 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
-
-type StagedMentorWithSource = Prisma.StagedMentorGetPayload<{
-  include: { source: true };
-}>;
 
 export default async function StagedMentorsAdminPage() {
   const items = await prisma.stagedMentor.findMany({
@@ -12,6 +7,8 @@ export default async function StagedMentorsAdminPage() {
     include: { source: true },
     take: 200,
   });
+
+  type StagedMentorWithSource = (typeof items)[number];
 
   return (
     <main className="mx-auto max-w-5xl p-6">
