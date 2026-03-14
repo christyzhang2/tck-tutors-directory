@@ -3,6 +3,7 @@ import path from "node:path";
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Prisma } from "@prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is not set");
@@ -75,7 +76,7 @@ async function main() {
           name: item.name ?? null,
           headline: item.headline ?? null,
           bio: item.bio ?? null,
-          rawJson: item,
+          rawJson: JSON.parse(JSON.stringify(item)) as Prisma.InputJsonValue,
           fingerprint: fp,
         },
       });
@@ -94,7 +95,7 @@ async function main() {
         name: item.name ?? null,
         headline: item.headline ?? null,
         bio: item.bio ?? null,
-        rawJson: item,
+        rawJson: JSON.parse(JSON.stringify(item)) as Prisma.InputJsonValue,
         updatedAt: new Date(),
       },
     });
