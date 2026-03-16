@@ -7,15 +7,17 @@ datasource db {
 }
 
 model Mentor {
-  id        String   @id @default(cuid())
-  name      String
-  headline  String?
-  bio       String?
-  city      String?
-  country   String?
-  timezone  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  headline          String?
+  bio               String?
+  city              String?
+  country           String?
+  timezone          String?
+  culturalBridgeFit String?
+  teenRapport       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   mentorTags MentorTag[]
 }
