@@ -65,6 +65,8 @@ async function main() {
       city: "Tokyo",
       country: "Japan",
       timezone: "Asia/Tokyo",
+      culturalBridgeFit: "Strong",
+      teenRapport: "Strong",
       tagLabels: ["IB", "IB Math", "English (Fluent)", "Japanese (Native)", "Japan / International School", "Anime", "Third Culture Kid"],
     },
     {
@@ -74,6 +76,8 @@ async function main() {
       city: "Seoul",
       country: "South Korea",
       timezone: "Asia/Seoul",
+      culturalBridgeFit: "Strong",
+      teenRapport: "Moderate",
       tagLabels: ["AP", "AP Calculus", "IB Physics", "English (Fluent)", "Korean (Native)", "Korea / International School", "Gaming", "Returnee"],
     },
     // add 13 more (keep it simple—variety matters more than perfection)
@@ -92,6 +96,8 @@ async function main() {
         city: m.city,
         country: m.country,
         timezone: m.timezone,
+        culturalBridgeFit: m.culturalBridgeFit,
+        teenRapport: m.teenRapport,
       },
     });
 

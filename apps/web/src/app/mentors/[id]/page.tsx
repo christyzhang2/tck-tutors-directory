@@ -41,6 +41,25 @@ export default async function MentorProfilePage({
         {mentor.timezone ? ` · ${mentor.timezone}` : ""}
       </div>
 
+      <section className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border bg-zinc-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Cultural Bridge Fit
+          </div>
+          <div className="mt-2 text-lg font-medium text-gray-900">
+            {mentor.culturalBridgeFit ?? "Not set"}
+          </div>
+        </div>
+        <div className="rounded-xl border bg-zinc-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Teen Rapport
+          </div>
+          <div className="mt-2 text-lg font-medium text-gray-900">
+            {mentor.teenRapport ?? "Not set"}
+          </div>
+        </div>
+      </section>
+
       {mentor.bio ? (
         <section className="mt-6">
           <h2 className="text-lg font-medium">About</h2>

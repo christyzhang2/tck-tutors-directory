@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -9,8 +7,6 @@ export default async function StagedMentorsAdminPage() {
     include: { source: true },
     take: 200,
   });
-
-  type StagedMentorWithSource = (typeof items)[number];
 
   return (
     <main className="mx-auto max-w-5xl p-6">
@@ -27,7 +23,7 @@ export default async function StagedMentorsAdminPage() {
       </div>
 
       <div className="space-y-3">
-        {items.map((m: StagedMentorWithSource) => (
+        {items.map((m) => (
           <div key={m.id} className="rounded-xl border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="font-medium">
