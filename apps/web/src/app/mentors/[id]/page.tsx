@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 
 type Params = { id: string };
 
+function formatMode(mode: string | null) {
+  if (!mode) return "Not set";
+  if (mode === "in-person") return "In-person";
+  return mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+
 export default async function MentorProfilePage({
   params,
 }: {
@@ -66,6 +72,19 @@ export default async function MentorProfilePage({
           <p className="mt-2 whitespace-pre-line text-gray-800">{mentor.bio}</p>
         </section>
       ) : null}
+
+      <section className="mt-6 rounded-xl border bg-white p-5">
+        <h2 className="text-lg font-medium">Teaching Details</h2>
+        <div className="mt-3 text-sm text-gray-700">
+          <span className="font-medium text-gray-900">Teaching Mode:</span> {formatMode(mentor.mode)}
+        </div>
+        <div className="mt-4">
+          <div className="text-sm font-medium text-gray-900">Qualifications</div>
+          <p className="mt-2 whitespace-pre-line text-sm text-gray-700">
+            {mentor.qualifications ?? "Not set"}
+          </p>
+        </div>
+      </section>
 
       <section className="mt-6">
         <h2 className="text-lg font-medium">Tags</h2>

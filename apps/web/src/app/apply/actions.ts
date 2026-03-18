@@ -16,11 +16,16 @@ function getString(value: FormDataEntryValue | null) {
 }
 
 export async function submitApplication(formData: FormData) {
+  const sourceUrl = "manual://apply";
+  const sourceDomain = "manual_apply";
   const name = getString(formData.get("name"));
   const headline = getString(formData.get("headline"));
   const bio = getString(formData.get("bio"));
+  const qualifications = getString(formData.get("qualifications"));
   const city = getString(formData.get("city"));
   const country = getString(formData.get("country"));
+  const rawMode = getString(formData.get("mode"));
+  const mode = ["online", "in-person", "hybrid"].includes(rawMode) ? rawMode : "online";
   const languages = parseCommaSeparated(formData.get("languages"));
   const subjects = parseCommaSeparated(formData.get("subjects"));
 
@@ -29,11 +34,11 @@ export async function submitApplication(formData: FormData) {
   }
 
   const source = await prisma.rawSource.upsert({
-    where: { url: "manual_apply" },
-    update: { domain: "manual_apply", title: "Manual Apply Submission" },
+    where: { url: sourceUrl },
+    update: { domain: sourceDomain, title: "Manual Apply Submission" },
     create: {
-      url: "manual_apply",
-      domain: "manual_apply",
+      url: sourceUrl,
+      domain: sourceDomain,
       title: "Manual Apply Submission",
     },
   });
@@ -48,14 +53,18 @@ export async function submitApplication(formData: FormData) {
       city: city || null,
       country: country || null,
       rawJson: {
-        source: "manual_apply",
+        source: sourceDomain,
+        source_url: sourceUrl,
+        source_domain: sourceDomain,
         submittedAt: new Date().toISOString(),
         form: {
           name,
           headline,
           bio,
+          qualifications,
           city,
           country,
+          mode,
           languages,
           subjects,
         },

@@ -76,6 +76,19 @@ export default async function ApplyPage({
             />
           </div>
 
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="qualifications">
+              Qualifications
+            </label>
+            <textarea
+              id="qualifications"
+              name="qualifications"
+              rows={4}
+              className="w-full rounded-lg border px-3 py-2"
+              placeholder="IB graduate, 3 years tutoring experience"
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="city">
@@ -100,6 +113,22 @@ export default async function ApplyPage({
                 placeholder="Singapore"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="mode">
+              Teaching Mode
+            </label>
+            <select
+              id="mode"
+              name="mode"
+              defaultValue="online"
+              className="w-full rounded-lg border px-3 py-2"
+            >
+              <option value="online">Online</option>
+              <option value="in-person">In-person</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
           </div>
 
           <div>

@@ -8,6 +8,12 @@ type MentorsSearchParams = {
   sub?: string | string[];
 };
 
+function formatMode(mode: string | null) {
+  if (!mode) return null;
+  if (mode === "in-person") return "In-person";
+  return mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+
 export default async function MentorsPage({
   searchParams,
 }: {
@@ -72,59 +78,50 @@ export default async function MentorsPage({
       <Filters languages={languages} subjects={subjects} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {mentors.map((m) => (
-          <Link
-            key={m.id}
-            href={`/mentors/${m.id}`}
-            className="rounded-xl border bg-white p-4 shadow-sm transition hover:shadow"
-          >
-            <div className="text-lg font-medium">{m.name}</div>
-            {m.headline && (
-              <div className="text-sm text-gray-600 mt-1">
-                {m.headline}
-              </div>
-            )}
-            {(m as any).culturalBridgeFit ? (
-              <div className="mt-2 text-sm text-gray-600">
-              🌏 Cultural Bridge Fit: {(m as any).culturalBridgeFit}
-              </div>
-            ) : null}
+        {mentors.map((m) => {
+          const location = [m.city, m.country].filter(Boolean).join(", ");
+          const locationAndMode = [location, formatMode(m.mode)].filter(Boolean).join(" / ");
 
-            {(m as any).teenRapport ? (
-              <div className="text-sm text-gray-600">
-              🎮 Teen Rapport: {(m as any).teenRapport}
-              </div>
-            ) : null} 
-                       
-            {m.city || m.country ? (
-              <div className="mt-2 text-sm text-gray-500">
-                {[m.city, m.country].filter(Boolean).join(", ")}
-              </div>
-            ) : null}
+          return (
+            <Link
+              key={m.id}
+              href={`/mentors/${m.id}`}
+              className="rounded-xl border bg-white p-4 shadow-sm transition hover:shadow"
+            >
+              <div className="text-lg font-medium">{m.name}</div>
+              {m.headline && (
+                <div className="mt-1 text-sm text-gray-600">
+                  {m.headline}
+                </div>
+              )}
+              {locationAndMode ? (
+                <div className="mt-2 text-sm text-gray-500">{locationAndMode}</div>
+              ) : null}
 
-            <div className="mt-3 grid gap-2 rounded-lg bg-zinc-50 p-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-gray-500">Cultural Bridge Fit</span>
-                <span className="font-medium text-gray-800">{(m as any).culturalBridgeFit ?? "Not set"}</span>
+              <div className="mt-3 grid gap-2 rounded-lg bg-zinc-50 p-3 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-500">Cultural Bridge Fit</span>
+                  <span className="font-medium text-gray-800">{m.culturalBridgeFit ?? "Not set"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-500">Teen Rapport</span>
+                  <span className="font-medium text-gray-800">{m.teenRapport ?? "Not set"}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-gray-500">Teen Rapport</span>
-                <span className="font-medium text-gray-800">{(m as any).teenRapport ?? "Not set"}</span>
-              </div>
-            </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {m.mentorTags.slice(0, 5).map((mt) => (
-                <span
-                  key={mt.tag.id}
-                  className="text-xs border px-2 py-1 rounded-full"
-                >
-                  {mt.tag.label}
-                </span>
-              ))}
-            </div>
-          </Link>
-        ))}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {m.mentorTags.slice(0, 5).map((mt) => (
+                  <span
+                    key={mt.tag.id}
+                    className="text-xs border px-2 py-1 rounded-full"
+                  >
+                    {mt.tag.label}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </main>
   );

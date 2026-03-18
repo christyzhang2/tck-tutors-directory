@@ -14,6 +14,8 @@ model Mentor {
   city              String?
   country           String?
   timezone          String?
+  qualifications    String?
+  mode              String?
   culturalBridgeFit String?
   teenRapport       String?
   createdAt         DateTime @default(now())
