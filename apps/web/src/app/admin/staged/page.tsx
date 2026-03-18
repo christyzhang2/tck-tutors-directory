@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { approveStagedMentor, rejectStagedMentor } from "./actions";
 
 export default async function StagedMentorsAdminPage() {
   const items = await prisma.stagedMentor.findMany({
@@ -29,9 +30,29 @@ export default async function StagedMentorsAdminPage() {
               <div className="font-medium">
                 {m.name ?? <span className="text-gray-500">(no name yet)</span>}
               </div>
-              <span className="rounded-full border px-2 py-1 text-xs">
-                {m.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border px-2 py-1 text-xs">
+                  {m.status}
+                </span>
+                <form action={approveStagedMentor.bind(null, m.id)}>
+                  <button
+                    type="submit"
+                    disabled={m.status === "APPROVED" || m.status === "REJECTED"}
+                    className="rounded-md border border-green-300 px-3 py-1 text-xs font-medium text-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Approve
+                  </button>
+                </form>
+                <form action={rejectStagedMentor.bind(null, m.id)}>
+                  <button
+                    type="submit"
+                    disabled={m.status === "APPROVED" || m.status === "REJECTED"}
+                    className="rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                </form>
+              </div>
             </div>
 
             {m.headline ? <div className="mt-1 text-sm text-gray-700">{m.headline}</div> : null}
